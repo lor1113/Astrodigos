@@ -1,6 +1,6 @@
 import networkx
 import csv
-import json
+import msgpack
 
 metadata = {}
 eve_map = networkx.Graph()
@@ -16,16 +16,15 @@ for row in csv_reader:
         "security": float(row[21]),
     }
     eve_map.add_node(int(row[2]))
-    metadata[int(row[2])] = system
-
+    metadata[str(row[2])] = system
 csv_map.close()
+
 csv_jump_map = open('fuzzwork_sde/mapSolarSystemJumps.csv', 'r')
 csv_reader = csv.reader(csv_jump_map, delimiter=',')
 next(csv_reader)
 for row in csv_reader:
     eve_map.add_edge(int(row[2]), int(row[3]))
-
-print(eve_map.number_of_nodes())
+csv_jump_map.close()
 
 remove_list = []
 for node in eve_map.nodes():
@@ -34,13 +33,31 @@ for node in eve_map.nodes():
 
 for node in remove_list:
     eve_map.remove_node(node)
+remove_list = []
 
 paths = networkx.single_source_shortest_path(eve_map, 30000142)
 for node in eve_map.nodes():
     if node not in paths:
         remove_list.append(node)
 
+for node in remove_list:
+    eve_map.remove_node(node)
+
+msgpack.pack(metadata, open('static/eve_map_metadata.msgpack', 'wb'))
+networkx.write_multiline_adjlist(eve_map, "static/eve_map.adjlist")
 print(eve_map.number_of_nodes())
 
-networkx.write_adjlist(eve_map, 'static/eve_map.adjlist')
-json.dump(metadata, open('static/eve_map_metadata.json', 'w'))
+edges = []
+counter = 0
+out = networkx.shortest_path_length(eve_map)
+for x, y in out:
+    counter += 1
+    if counter % 100 == 0:
+        print(counter)
+    for a, b in y.items():
+        if a != x:
+            edges.append((x, a, b))
+
+with open("static/eve_complete_edges.msgpack", "wb") as outfile:
+    msgpack.pack(edges, outfile)
+
