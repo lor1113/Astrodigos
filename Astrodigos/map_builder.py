@@ -1,5 +1,6 @@
 import networkx
 import csv
+import copy
 
 metadata = {}
 eve_map = networkx.Graph()
@@ -43,3 +44,22 @@ for node in remove_list:
     eve_map.remove_node(node)
 
 networkx.write_multiline_adjlist(eve_map, "static/eve_map_base.adjlist")
+
+eve_map_avoid_ls = copy.deepcopy(eve_map)
+
+for node in eve_map_avoid_ls.nodes():
+    if metadata[str(node)]["security"] < 0.45:
+        for edge in eve_map_avoid_ls.edges(node):
+            eve_map_avoid_ls[edge[0]][edge[1]]["weight"] = 10000
+
+
+networkx.write_multiline_adjlist(eve_map_avoid_ls, "static/eve_map_avoid_ls.adjlist")
+
+eve_map_avoid_hs = copy.deepcopy(eve_map)
+
+for node in eve_map_avoid_hs.nodes():
+    if metadata[str(node)]["security"] >= 0.45:
+        for edge in eve_map_avoid_hs.edges(node):
+            eve_map_avoid_hs[edge[0]][edge[1]]["weight"] = 10000
+
+networkx.write_multiline_adjlist(eve_map_avoid_hs, "static/eve_map_avoid_hs.adjlist")

@@ -2,7 +2,9 @@ import networkx
 import time
 import itertools
 
-eve_map = networkx.read_multiline_adjlist("static/eve_map.adjlist")
+eve_map_base = networkx.read_multiline_adjlist("static/eve_map_base.adjlist")
+eve_map_avoid_ls = networkx.read_multiline_adjlist("static/eve_map_avoid_ls.adjlist")
+eve_map_avoid_hs = networkx.read_multiline_adjlist("static/eve_map_avoid_hs.adjlist")
 
 avoid_weights = [1, 100, 10000, 1000000, 100000000]
 trig = [30004981, 30000163, 30003464, 30005330, 30002557, 30003856, 30002645, 30003076, 30045338, 30045345, 30000182,
@@ -49,7 +51,7 @@ def remove_duplicates(input_array):
     return [x for x in input_array if not (x in seen or seen_add(x))]
 
 
-def get_route(start, end, waypoints):
+def get_route(eve_map, start, end, waypoints):
     eve_map_complete = networkx.Graph()
     total_nodes = waypoints + [start, end]
     for a in total_nodes:
@@ -78,17 +80,7 @@ def get_route(start, end, waypoints):
         final_path += path[:-1]
     final_path.append(output[-1][1])
     final_path = [str(x) for x in final_path]
-    if final_path[0] != str(test_start) or final_path[-1] != str(test_end):
-        print("Something went wrong! Start or end not correct.")
-        print(final_path[0], test_start)
-        print(final_path[-1], test_end)
-        return None
-    waypoints = [str(x) for x in waypoints]
-    if not all(x in final_path for x in waypoints):
-        print("Something went wrong! Not all waypoints present.")
-        print(waypoints)
-        return None
-    route_validator(eve_map, final_path)
+    route_validator(eve_map, final_path, start, end, waypoints)
     return final_path
 
 
@@ -106,9 +98,16 @@ def tsp_brute_force(graph, waypoints, start, end):
     return best_route, best_cost
 
 
-def route_validator(graph, route):
-    for i in range(len(route) - 1):
-        if not graph.has_edge(route[i], route[i + 1]):
+def route_validator(graph, final_path, start, end, waypoints):
+    if final_path[0] != str(start) or final_path[-1] != str(end):
+        print("Something went wrong! Start or end not correct.")
+        return None
+    waypoints = [str(x) for x in waypoints]
+    if not all(x in final_path for x in waypoints):
+        print("Something went wrong! Not all waypoints present.")
+        return None
+    for i in range(len(final_path) - 1):
+        if not graph.has_edge(final_path[i], final_path[i + 1]):
             return False
     print("Route is valid")
     return True
@@ -117,9 +116,8 @@ def route_validator(graph, route):
 test_start = 30000142
 test_end = 30000144
 test_waypoints = [30004131, 30003731, 30001899, 30001953, 30001131, 30001956, 30002655, 30000450, 30001954, 30003269,
-                  30003350, 30001044, 30002386, 30004510, 30002533, 30000598, 30000794, 30004362, 30001560,
                   30001679, 30000567, 30005109, 30003161, 30001161, 30000002, 30003154, 30003254, 30003234, 30002738]
 start_time = time.time()
-out_route = get_route(test_start, test_end, test_waypoints)
+out_route = get_route(eve_map_base,test_start, test_end, test_waypoints)
 print(len(out_route))
 print(time.time() - start_time)
