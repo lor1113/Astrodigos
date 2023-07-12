@@ -1,22 +1,10 @@
 import networkx
 import msgpack
 import time
+import itertools
 
 eve_map = networkx.read_multiline_adjlist("static/eve_map.adjlist")
 map_metadata = msgpack.unpack(open("static/eve_map_metadata.msgpack", "rb"))
-
-
-def cycle_post_process(cycle_in, start):
-    dummy = cycle_in.index("dummy")
-    cut1 = cycle_in[:dummy]
-    cut2 = cycle_in[dummy + 1:]
-    cut2.pop()
-    cut1.reverse()
-    cut2.reverse()
-    out = cut1 + cut2
-    if out[-1] == start:
-        out.reverse()
-    return out
 
 
 def array_to_pairs(array):
@@ -35,20 +23,19 @@ def remove_duplicates(input_array):
 def get_route(start, end, waypoints):
     eve_map_complete = networkx.Graph()
     total_nodes = waypoints + [start, end]
+    start_time = time.time()
     for a in total_nodes:
         for b in total_nodes:
             if a != b:
                 eve_map_complete.add_edge(a, b, weight=networkx.shortest_path_length(eve_map, str(a), str(b)))
-    eve_map_complete.add_node("dummy")
-    eve_map_complete.add_edge("dummy", start, weight=0)
-    eve_map_complete.add_edge("dummy", end, weight=0)
-    for x in waypoints:
-        eve_map_complete.add_edge("dummy", x, weight=999999999)
+    print("Graph complete in {} seconds".format(time.time() - start_time))
     if networkx.density(eve_map_complete) != 1:
         print("Something went wrong! Graph not complete.")
         return None
-    output = networkx.approximation.christofides(eve_map_complete, weight="weight")
-    output = cycle_post_process(output, start)
+    start_time = time.time()
+    output, cost = tsp_brute_force(eve_map_complete, waypoints, start, end)
+    print("TSP complete in {} seconds".format(time.time() - start_time))
+    print(output)
     output = array_to_pairs(output)
     final_path = []
     for x in output:
@@ -90,11 +77,25 @@ def route_validator(graph, route, verbose=False):
     return True
 
 
+def tsp_brute_force(graph, waypoints, start, end):
+    best_cost = -1
+    best_route = []
+    for permutation in itertools.permutations(waypoints):
+        cost = 0
+        route = [start] + list(permutation) + [end]
+        for i in range(len(route) - 1):
+            cost += graph[route[i]][route[i + 1]]["weight"]
+        if best_cost == -1 or cost < best_cost:
+            best_cost = cost
+            best_route = route
+    return best_route, best_cost
+
+
 test_start = 30000142
 test_end = 30000144
-test_waypoints = [30004131, 30003731, 30001899, 30001953, 30001131, 30001956, 30002655, 30000450, 30001954, 30003269,
-                  30001679, 30000567, 30005109, 30003161, 30001161, 30000002, 30003154, 30003254, 30003234, 30002738]
+test_waypoints = [30004131, 30003731, 30001899, 30001953, 30001131, 30001956, 30002655, 30000450]
 start_time = time.time()
 route = get_route(test_start, test_end, test_waypoints)
 print(len(route))
-print(time.time() - start_time)
+print("Total time: {} seconds".format(time.time() - start_time))
+
