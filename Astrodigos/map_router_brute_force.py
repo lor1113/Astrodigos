@@ -27,7 +27,8 @@ def get_route(start, end, waypoints):
     for a in total_nodes:
         for b in total_nodes:
             if a != b:
-                eve_map_complete.add_edge(a, b, weight=networkx.shortest_path_length(eve_map, str(a), str(b)))
+                eve_map_complete.add_edge(a, b, weight=networkx.shortest_path_length(eve_map, str(a), str(b),
+                                                                                     weight="weight"))
     print("Graph complete in {} seconds".format(time.time() - start_time))
     if networkx.density(eve_map_complete) != 1:
         print("Something went wrong! Graph not complete.")
@@ -98,4 +99,3 @@ start_time = time.time()
 route = get_route(test_start, test_end, test_waypoints)
 print(len(route))
 print("Total time: {} seconds".format(time.time() - start_time))
-

@@ -59,7 +59,7 @@ csv_jump_map = open('fuzzwork_sde/mapSolarSystemJumps.csv', 'r')
 csv_reader = csv.reader(csv_jump_map, delimiter=',')
 next(csv_reader)
 for row in csv_reader:
-    eve_map.add_edge(int(row[2]), int(row[3]), weight=0)
+    eve_map.add_edge(int(row[2]), int(row[3]), weight=0.01)
 csv_jump_map.close()
 
 remove_list = []
@@ -74,14 +74,17 @@ for node in remove_list:
 
 for node in eve_map.nodes():
     if system_security[str(node)] < 0.0:
-        metadata["ns"].append(node)
+        metadata["ns"].append(str(node))
     elif system_security[str(node)] < 0.45:
-        metadata["ls"].append(node)
+        metadata["ls"].append(str(node))
     elif system_security[str(node)] > 0.45:
-        metadata["hs"].append(node)
+        metadata["hs"].append(str(node))
     else:
         print("Something went wrong!")
         print(node)
+
+metadata["trig"] = [str(x) for x in metadata["trig"]]
+metadata["edencom"] = [str(x) for x in metadata["edencom"]]
 
 networkx.write_multiline_adjlist(eve_map, "static/eve_map_base.adjlist")
 json.dump(metadata, open("static/metadata.json", "w"))
